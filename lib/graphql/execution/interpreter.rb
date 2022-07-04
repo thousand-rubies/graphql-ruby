@@ -21,7 +21,7 @@ module GraphQL
         # The batching context is shared by the multiplex,
         # so fetch it out and use that instance.
         interpreter =
-          query.context.namespace(:interpreter)[:interpreter_instance] =
+          query.context.namespace(:interpreter_runtime)[:interpreter_instance] =
           multiplex.context[:interpreter_instance]
         interpreter.evaluate(query)
         query
@@ -34,7 +34,7 @@ module GraphQL
 
       def self.finish_query(query, _multiplex)
         {
-          "data" => query.context.namespace(:interpreter)[:runtime].final_result
+          "data" => query.context.namespace(:interpreter_runtime)[:runtime].final_result
         }
       end
 
@@ -45,7 +45,7 @@ module GraphQL
         # they also have another item of state, which is private to that query
         # in particular, assign it here:
         runtime = Runtime.new(query: query)
-        query.context.namespace(:interpreter)[:runtime] = runtime
+        query.context.namespace(:interpreter_runtime)[:runtime] = runtime
 
         query.trace("execute_query", {query: query}) do
           runtime.run_eager
@@ -63,7 +63,7 @@ module GraphQL
         end
         queries = multiplex ? multiplex.queries : [query]
         final_values = queries.map do |query|
-          runtime = query.context.namespace(:interpreter)[:runtime]
+          runtime = query.context.namespace(:interpreter_runtime)[:runtime]
           # it might not be present if the query has an error
           runtime ? runtime.final_result : nil
         end
@@ -72,7 +72,7 @@ module GraphQL
           Interpreter::Resolve.resolve_all(final_values, multiplex.dataloader)
         end
         queries.each do |query|
-          runtime = query.context.namespace(:interpreter)[:runtime]
+          runtime = query.context.namespace(:interpreter_runtime)[:runtime]
           if runtime
             runtime.delete_interpreter_context(:current_path)
             runtime.delete_interpreter_context(:current_field)
