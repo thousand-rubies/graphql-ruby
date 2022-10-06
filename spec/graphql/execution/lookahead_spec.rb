@@ -87,6 +87,8 @@ describe GraphQL::Execution::Lookahead do
       def species(id:)
         DATA.find_by_name(id)
       end
+
+      field :boolean_field, Boolean
     end
 
     class LookaheadInstrumenter
@@ -174,6 +176,17 @@ describe GraphQL::Execution::Lookahead do
         # Only plants have `isEdible`
         refute lookahead.selects?(:is_edible, selected_type: LookaheadTest::BirdSpecies)
         assert lookahead.selects?(:is_edible, selected_type: LookaheadTest::PlantSpecies)
+      end
+    end
+
+    describe "on scalars" do
+      let(:document) {
+        GraphQL.parse("{ booleanField }")
+      }
+
+      it "returns false" do
+        assert_equal true, query.lookahead.selects?(:boolean_field)
+        assert_equal false, query.lookahead.selection(:boolean_field).selects?(:something)
       end
     end
 
